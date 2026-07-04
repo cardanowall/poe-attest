@@ -1,0 +1,120 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed to create the GitHub Release and to force-push the moving major tag.
+      contents: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # A full checkout so the moving major tag can be created at this commit.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # No dependency cache is configured here, so the cache-poisoning vector the
+      # audit warns about on publishing workflows does not apply.
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0 # zizmor: ignore[cache-poisoning]
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # ---- Gates: re-run the CI suite as release-blockers ----------------------
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Verify committed dist/ is fresh
+        run: npm run check:dist
+
+      # ---- Assert the tag agrees with the manifest -----------------------------
+      - name: Assert the tag matches package.json
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          tag_version="${REF_NAME#v}"
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "::error::tag v$tag_version does not match package.json version $pkg_version"
+            exit 1
+          fi
+          echo "tag v$tag_version matches package.json"
+
+      - name: Derive release metadata
+        id: meta
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${REF_NAME#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "major_tag=v${version%%.*}" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract release notes from CHANGELOG
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          awk -v ver="$VERSION" '
+            $0 ~ ("^## \\[?" ver "\\]?") { grab=1; next }
+            grab && /^## / { exit }
+            grab { print }
+          ' CHANGELOG.md > release-notes.md || true
+          if [ ! -s release-notes.md ]; then
+            printf 'Label 309 PoE Attest %s.\n' "$VERSION" > release-notes.md
+          fi
+
+      # Create the Release with the runner's built-in `gh` CLI — no third-party
+      # action, and the tag already exists (this run was triggered by its push).
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+          IS_PRERELEASE: ${{ steps.meta.outputs.is_prerelease }}
+        run: |
+          set -euo pipefail
+          args=(--title "Label 309 PoE Attest $REF_NAME" --notes-file release-notes.md --verify-tag)
+          if [ "$IS_PRERELEASE" = "true" ]; then args+=(--prerelease); fi
+          gh release create "$REF_NAME" "${args[@]}"
+
+      # Move `vN` to this release so `uses: cardanowall/poe-attest@vN` tracks the
+      # newest final release. A prerelease is published under its exact tag only
+      # and never advances the major tag. The push uses the job's GITHUB_TOKEN
+      # (a token push does not re-trigger this workflow, so there is no loop).
+      - name: Advance the moving major tag
+        if: ${{ steps.meta.outputs.is_prerelease == 'false' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAJOR_TAG: ${{ steps.meta.outputs.major_tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -f "$MAJOR_TAG" "$REF_NAME"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "refs/tags/$MAJOR_TAG"
+          echo "advanced $MAJOR_TAG -> $REF_NAME"

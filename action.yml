@@ -1,0 +1,241 @@
+name: Label 309 PoE Attest
+description: >-
+  Anchor file hashes, git commits, or precomputed digests on Cardano as a
+  Label 309 Proof of Existence. Blockchain-anchored build provenance with no
+  issuer to trust.
+author: CardanoWall
+branding:
+  icon: anchor
+  color: blue
+
+inputs:
+  gateway-url:
+    description: >-
+      Data-plane base URL of any Label 309 gateway, hosted or self-hosted,
+      including the API version segment (https://cardanowall.com/api/v1 is one
+      example; a self-hosted label-309-gateway works identically). Must agree
+      with the network input.
+      Must be https (it carries the API key); plain http is allowed only for
+      loopback hosts (localhost, 127.0.0.0/8, [::1]) for local dev gateways.
+    required: true
+  api-key:
+    description: >-
+      Opaque gateway API key (a prepaid, publish-only billing credential). Store
+      it as an encrypted secret; it is masked in logs and passed to the CLI only
+      via the environment, never on the command line.
+    required: true
+
+  paths:
+    description: >-
+      Files to anchor, one path or glob per line. Each leaf is the SHA-256 of the
+      file bytes; multiple files build a Merkle record. Set exactly one of
+      paths / commits / leaves.
+    required: false
+    default: ''
+  commits:
+    description: >-
+      A git rev-list range (e.g. "v1.0..v1.1" or "HEAD") to anchor commit
+      provenance; each leaf is the SHA-256 of a raw commit object. Needs
+      actions/checkout with fetch-depth: 0. Set exactly one of paths / commits /
+      leaves.
+    required: false
+    default: ''
+  leaves:
+    description: >-
+      Precomputed 64-hex digests to anchor, one per line (e.g. OCI image digests).
+      Set exactly one of paths / commits / leaves.
+    required: false
+    default: ''
+
+  publish:
+    description: >-
+      For a Merkle record: "full-tree" uploads the leaves list and binds its
+      ar:// URI on-chain; "root" publishes only the root and leaf count, keeping
+      the leaf set private.
+    required: false
+    default: full-tree
+  anchor-manifest:
+    description: >-
+      Append SHA-256(manifest bytes) as the final leaf, anchoring the name to
+      hash binding itself. Applies to paths mode only.
+    required: false
+    default: 'false'
+  manifest-out:
+    description: Where the deterministic manifest is written (paths mode).
+    required: false
+    default: poe-manifest.json
+
+  seed:
+    description: >-
+      Optional 32-byte identity seed (64-hex or L309-SEED-1...) for a record
+      signature, enabling ?signer= discoverability. Omit to publish unsigned. Use
+      a dedicated, environment-protected CI identity, never a personal one; it is
+      masked and passed to the CLI only via stdin.
+    required: false
+    default: ''
+
+  wait:
+    description: >-
+      Lifecycle state to wait for before exiting: "confirmed" (crossed the
+      confirmation threshold) or "submitted" (reached the network).
+    required: false
+    default: confirmed
+  timeout:
+    description: >-
+      Wait deadline in seconds. On expiry the outputs are still written and the
+      step is marked pending (see fail-on-timeout); the publish continues on the
+      gateway.
+    required: false
+    default: '600'
+  fail-on-timeout:
+    description: Fail the step (instead of warning) when the wait times out.
+    required: false
+    default: 'false'
+
+  max-usd:
+    description: >-
+      Refuse to publish when the quoted price exceeds this USD amount (e.g.
+      "1.50"). The refusal happens before any upload or publish.
+    required: false
+    default: ''
+  supersedes:
+    description: The 64-hex Cardano transaction hash of an earlier record this one replaces.
+    required: false
+    default: ''
+  idempotency-key:
+    description: >-
+      Idempotency key. "auto" (default) relies on the gateway's byte-identical
+      request dedup; any other value is sent verbatim under the strict key
+      contract.
+    required: false
+    default: auto
+
+  certificates:
+    description: >-
+      Write one inclusion certificate per leaf (Merkle records) into
+      <working-directory>/poe-certificates, which the action recreates empty
+      before each run. Requires wait=confirmed.
+    required: false
+    default: 'false'
+
+  network:
+    description: >-
+      Cardano network recorded in certificates and explorer URLs. Must agree with
+      gateway-url.
+    required: false
+    default: mainnet
+
+  receipt-out:
+    description: Where the versioned JSON receipt is written.
+    required: false
+    default: poe-receipt.json
+
+  upload-artifact:
+    description: >-
+      Upload the receipt/manifest/certificates as a workflow artifact: "auto"
+      (true on github.com, false on GHES), "true", or "false".
+    required: false
+    default: auto
+  artifact-name:
+    description: Name of the uploaded artifact.
+    required: false
+    default: poe-attest
+
+  attach-to-release:
+    description: >-
+      Attach the receipt/manifest/certificates to a GitHub release as assets.
+      Requires the contents:write permission.
+    required: false
+    default: 'false'
+  release-tag:
+    description: >-
+      Explicit release tag to attach to. Defaults to the release event payload,
+      then a pushed tag ref.
+    required: false
+    default: ''
+  overwrite-release-assets:
+    description: Replace an existing release asset of the same name instead of failing it.
+    required: false
+    default: 'true'
+  github-token:
+    description: Token used to attach release assets. Needs contents:write.
+    required: false
+    default: ${{ github.token }}
+
+  verify-base:
+    description: Base URL for the verify-url output deep link.
+    required: false
+    default: https://cardanowall.com
+
+  working-directory:
+    description: >-
+      Directory the CLI runs in; paths globs and git commands resolve against it.
+    required: false
+    default: '.'
+
+  cli-version:
+    description: >-
+      cardanowall CLI release to use. Defaults to the version pinned in this
+      action (with both archive and binary digests embedded, so tool-cache hits
+      are re-verified across runs). A non-default version is verified against its
+      release SHA256SUMS and re-downloaded every run (not trusted from a cross-run
+      cache); add cli-sha256 to also pin its archive digest.
+    required: false
+    default: ''
+  cli-sha256:
+    description: >-
+      Optional SHA-256 pin for an overridden cli-version: a single archive digest
+      for the current platform, or one "<target>=<sha256>" per line/comma. With
+      cli-path it is the binary digest instead.
+    required: false
+    default: ''
+  cli-path:
+    description: >-
+      Path to a preinstalled cardanowall binary (self-hosted / air-gapped),
+      resolved relative to the workspace (GITHUB_WORKSPACE) if relative. No
+      download or hash check unless cli-sha256 is given. Mutually exclusive with
+      cli-version.
+    required: false
+    default: ''
+
+outputs:
+  tx:
+    description: The Cardano transaction hash of the anchor (empty while pending without a tx).
+  root:
+    description: The Merkle root (Merkle records only).
+  leaf-count:
+    description: Number of leaves in the Merkle record.
+  ar-uri:
+    description: The ar:// URI of the uploaded leaves list (full-tree Merkle records).
+  record-id:
+    description: The gateway PoE id for the record.
+  status:
+    description: The lifecycle status at exit (e.g. confirmed, confirming).
+  price-usd:
+    description: The quoted price in USD (empty on a replayed run).
+  balance-usd:
+    description: The account balance in USD after this publish.
+  replayed:
+    description: Whether the gateway deduplicated a byte-identical prior publish (true/false).
+  signer:
+    description: The ed25519 public key (hex) that signed the record, or empty if unsigned.
+  verify-url:
+    description: The Label 309 verifier deep link for the transaction.
+  explorer-url:
+    description: The Cardanoscan link for the transaction.
+  receipt-path:
+    description: Absolute path to the written JSON receipt.
+  manifest-path:
+    description: Absolute path to the written manifest (paths mode).
+  certificates-dir:
+    description: Absolute path to the inclusion-certificates directory (when written).
+  wait-target:
+    description: The lifecycle target that was waited for.
+  wait-reached:
+    description: Whether the wait target was reached before the timeout (true/false).
+  timed-out:
+    description: Whether the wait timed out; the publish continues server-side (true/false).
+
+runs:
+  using: node24
+  main: dist/index.js

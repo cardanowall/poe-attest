@@ -1,0 +1,15 @@
+# Node dependencies
+node_modules/
+
+# The committed action bundle (dist/) is intentionally NOT ignored: the GitHub
+# Actions runner loads dist/index.js directly from the tagged repository tree,
+# so it must be committed. `npm run check:dist` keeps it in sync with src/.
+
+# Tool caches and coverage
+.npm/
+coverage/
+*.tsbuildinfo
+
+# Editor / OS
+*.swp
+.DS_Store

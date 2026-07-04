@@ -1,0 +1,47 @@
+{
+  "name": "@cardanowall/poe-attest-action",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GitHub Action that anchors file hashes, git commits, or precomputed digests on Cardano as a Label 309 Proof of Existence.",
+  "license": "Apache-2.0",
+  "author": "CardanoWall <hello@cardanowall.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cardanowall/poe-attest.git"
+  },
+  "homepage": "https://github.com/cardanowall/poe-attest#readme",
+  "bugs": {
+    "url": "https://github.com/cardanowall/poe-attest/issues"
+  },
+  "keywords": [
+    "github-action",
+    "cardano",
+    "proof-of-existence",
+    "label-309",
+    "provenance",
+    "attestation",
+    "supply-chain"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check:dist": "node scripts/check-dist.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "update-cli-pin": "node scripts/update-cli-pin.mjs"
+  },
+  "dependencies": {
+    "@actions/artifact": "^6.2.1",
+    "@actions/core": "^3.0.1",
+    "@actions/github": "^9.1.1",
+    "@actions/tool-cache": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
