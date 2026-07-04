@@ -1,8 +1,9 @@
 name: Label 309 PoE Attest
+# The description doubles as the Marketplace listing line, which caps it at
+# 125 characters — keep it under the cap when editing.
 description: >-
   Anchor file hashes, git commits, or precomputed digests on Cardano as a
-  Label 309 Proof of Existence. Blockchain-anchored build provenance with no
-  issuer to trust.
+  Label 309 Proof of Existence. No issuer to trust.
 author: CardanoWall
 branding:
   icon: anchor
