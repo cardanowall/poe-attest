@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/). Consume
 the action by major tag — `uses: cardanowall/poe-attest@v1` — to track the newest
 compatible release.
 
+## [1.0.1] - 2026-07-06
+
+### Changed
+
+- Pin the default `cardanowall` CLI to 0.11.0, with refreshed per-target archive
+  SHA-256 digests. The action's default behaviour is unchanged; the new CLI's
+  capabilities (co-hashes across the publishing commands, passphrase seal/open,
+  local and out-of-band verification) are available to advanced workflows via
+  the `cli-version` input.
+
 ## [1.0.0] - 2026-07-04
 
 ### Added

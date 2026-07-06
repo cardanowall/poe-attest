@@ -29,8 +29,10 @@ inputs:
   paths:
     description: >-
       Files to anchor, one path or glob per line. Each leaf is the SHA-256 of the
-      file bytes; multiple files build a Merkle record. Set exactly one of
-      paths / commits / leaves.
+      file bytes; multiple files build a Merkle record. A glob's ** recurses:
+      use dir/* for one level or dir/**/* for a whole tree (a bare dir/** matches
+      the directory, not its files). The files must be present in the workspace
+      at run time. Set exactly one of paths / commits / leaves.
     required: false
     default: ''
   commits:
@@ -96,7 +98,8 @@ inputs:
   max-usd:
     description: >-
       Refuse to publish when the quoted price exceeds this USD amount (e.g.
-      "1.50"). The refusal happens before any upload or publish.
+      "1.50"). The refusal happens before any upload or publish, and is
+      re-checked against a fresh quote if the first expires mid-run (FX can move).
     required: false
     default: ''
   supersedes:

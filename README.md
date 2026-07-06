@@ -70,43 +70,54 @@ which you set.
 | git        | `commits` | SHA-256 of each raw commit object in a rev-list range             |
 | pre-hashed | `leaves`  | a 64-hex digest you computed elsewhere (e.g. an OCI image digest) |
 
-One leaf publishes a single-item record; multiple leaves publish a Merkle record
-whose root is anchored on-chain (with the leaf list optionally uploaded so every
-item gets an inclusion certificate).
+**One** leaf publishes a plain content-hash record; **two or more** publish an
+RFC 9162 Merkle record over the leaves. In the default `publish: full-tree` mode
+the leaf list is uploaded to Arweave and its `ar://` URI is bound on-chain, so
+every item can later get an inclusion certificate; `publish: root` anchors only
+the root and leaf count and keeps the leaf set private.
+
+**Path globs** (files mode) expand with `**` as a recursive wildcard: `dir/*`
+matches the files directly in `dir` (one level), `dir/**/*` every file under
+`dir` and its subdirectories. A bare `dir/**` matches the directory, not the
+files inside it, so it anchors nothing — end a recursive pattern with `/*` (for
+example `dist/**/*.tar.gz`). Only regular files are hashed, and paths mode reads
+them **as they exist in the runner at run time**, so build or `actions/checkout`
+them into the workspace before this step. (Commits mode instead needs full git
+history — `fetch-depth: 0` — as shown below.)
 
 ## Inputs
 
-| Input                      | Default                   | Description                                                                                                                                               |
-| -------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gateway-url`              | (required)                | Data-plane base URL of ANY Label 309 gateway, hosted or self-hosted, including the version segment (`https://cardanowall.com/api/v1` is just an example). |
-| `api-key`                  | (required)                | Gateway API key (a prepaid, publish-only billing credential). Store as an encrypted secret.                                                               |
-| `paths`                    |                           | Files to anchor, one path or glob per line.                                                                                                               |
-| `commits`                  |                           | A git rev-list range (e.g. `v1.0..v1.1`, `HEAD`). Needs `fetch-depth: 0`.                                                                                 |
-| `leaves`                   |                           | Precomputed 64-hex digests, one per line.                                                                                                                 |
-| `publish`                  | `full-tree`               | Merkle publish mode: `full-tree` (upload the leaf list, bind its `ar://` URI) or `root` (root + count only).                                              |
-| `anchor-manifest`          | `false`                   | Append SHA-256(manifest) as a final leaf (paths mode).                                                                                                    |
-| `manifest-out`             | `poe-manifest.json`       | Where the deterministic manifest is written (paths mode).                                                                                                 |
-| `seed`                     |                           | Optional identity seed (64-hex or `L309-SEED-1...`) for a record signature. See Security.                                                                 |
-| `wait`                     | `confirmed`               | Lifecycle state to wait for: `confirmed` or `submitted`.                                                                                                  |
-| `timeout`                  | `600`                     | Wait deadline in seconds. On expiry the step is pending, not failed (see below).                                                                          |
-| `fail-on-timeout`          | `false`                   | Fail the step (instead of warning) when the wait times out.                                                                                               |
-| `max-usd`                  |                           | Refuse to publish if the quote exceeds this USD amount (e.g. `1.50`).                                                                                     |
-| `supersedes`               |                           | 64-hex tx hash of an earlier record this one replaces.                                                                                                    |
-| `idempotency-key`          | `auto`                    | `auto` relies on the gateway's byte-identical dedup; any other value is sent verbatim.                                                                    |
-| `certificates`             | `false`                   | Write one inclusion certificate per leaf (Merkle records). Requires `wait: confirmed`.                                                                    |
-| `network`                  | `mainnet`                 | `mainnet` or `preprod`. Must agree with `gateway-url`.                                                                                                    |
-| `receipt-out`              | `poe-receipt.json`        | Where the JSON receipt is written.                                                                                                                        |
-| `upload-artifact`          | `auto`                    | Upload receipt/manifest/certificates as an artifact: `auto` (true on github.com), `true`, `false`.                                                        |
-| `artifact-name`            | `poe-attest`              | Name of the uploaded artifact.                                                                                                                            |
-| `attach-to-release`        | `false`                   | Attach the receipt/manifest/certificates to a release. Requires `contents: write`.                                                                        |
-| `release-tag`              |                           | Explicit release tag; defaults to the release event, then a pushed tag.                                                                                   |
-| `overwrite-release-assets` | `true`                    | Replace a same-named release asset instead of failing it.                                                                                                 |
-| `github-token`             | `${{ github.token }}`     | Token for release attachment (`contents: write`).                                                                                                         |
-| `verify-base`              | `https://cardanowall.com` | Base URL for the `verify-url` output.                                                                                                                     |
-| `working-directory`        | `.`                       | Directory the CLI runs in; globs and git resolve against it.                                                                                              |
-| `cli-version`              | (pinned)                  | Override the pinned CLI release. See Pinning the CLI.                                                                                                     |
-| `cli-sha256`               |                           | SHA-256 pin for an overridden `cli-version`. See Pinning the CLI.                                                                                         |
-| `cli-path`                 |                           | Use a preinstalled binary (self-hosted / air-gapped).                                                                                                     |
+| Input                      | Default                   | Description                                                                                                                                                           |
+| -------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gateway-url`              | (required)                | Data-plane base URL of ANY Label 309 gateway, hosted or self-hosted, including the version segment (`https://cardanowall.com/api/v1` is just an example).             |
+| `api-key`                  | (required)                | Gateway API key (a prepaid, publish-only billing credential). Store as an encrypted secret.                                                                           |
+| `paths`                    |                           | Files to anchor, one path or glob per line.                                                                                                                           |
+| `commits`                  |                           | A git rev-list range (e.g. `v1.0..v1.1`, `HEAD`). Needs `fetch-depth: 0`.                                                                                             |
+| `leaves`                   |                           | Precomputed 64-hex digests, one per line.                                                                                                                             |
+| `publish`                  | `full-tree`               | Merkle publish mode: `full-tree` (upload the leaf list, bind its `ar://` URI) or `root` (root + count only).                                                          |
+| `anchor-manifest`          | `false`                   | Append SHA-256(manifest) as a final leaf (paths mode).                                                                                                                |
+| `manifest-out`             | `poe-manifest.json`       | Where the deterministic manifest is written (paths mode).                                                                                                             |
+| `seed`                     |                           | Optional identity seed (64-hex or `L309-SEED-1...`) for a record signature. See Security.                                                                             |
+| `wait`                     | `confirmed`               | Lifecycle state to wait for: `confirmed` or `submitted`.                                                                                                              |
+| `timeout`                  | `600`                     | Wait deadline in seconds. On expiry the step is pending, not failed (see below).                                                                                      |
+| `fail-on-timeout`          | `false`                   | Fail the step (instead of warning) when the wait times out.                                                                                                           |
+| `max-usd`                  |                           | Refuse to publish if the quote exceeds this USD amount (e.g. `1.50`), before any upload; re-checked against a fresh quote if the first expires mid-run (FX can move). |
+| `supersedes`               |                           | 64-hex tx hash of an earlier record this one replaces.                                                                                                                |
+| `idempotency-key`          | `auto`                    | `auto` relies on the gateway's byte-identical dedup; any other value is sent verbatim.                                                                                |
+| `certificates`             | `false`                   | Write one inclusion certificate per leaf (Merkle records). Requires `wait: confirmed`.                                                                                |
+| `network`                  | `mainnet`                 | `mainnet` or `preprod`. Must agree with `gateway-url`.                                                                                                                |
+| `receipt-out`              | `poe-receipt.json`        | Where the JSON receipt is written.                                                                                                                                    |
+| `upload-artifact`          | `auto`                    | Upload receipt/manifest/certificates as an artifact: `auto` (true on github.com), `true`, `false`.                                                                    |
+| `artifact-name`            | `poe-attest`              | Name of the uploaded artifact.                                                                                                                                        |
+| `attach-to-release`        | `false`                   | Attach the receipt/manifest/certificates to a release. Requires `contents: write`.                                                                                    |
+| `release-tag`              |                           | Explicit release tag; defaults to the release event, then a pushed tag.                                                                                               |
+| `overwrite-release-assets` | `true`                    | Replace a same-named release asset instead of failing it.                                                                                                             |
+| `github-token`             | `${{ github.token }}`     | Token for release attachment (`contents: write`).                                                                                                                     |
+| `verify-base`              | `https://cardanowall.com` | Base URL for the `verify-url` output.                                                                                                                                 |
+| `working-directory`        | `.`                       | Directory the CLI runs in; globs and git resolve against it.                                                                                                          |
+| `cli-version`              | (pinned)                  | Override the pinned CLI release. See Pinning the CLI.                                                                                                                 |
+| `cli-sha256`               |                           | SHA-256 pin for an overridden `cli-version`. See Pinning the CLI.                                                                                                     |
+| `cli-path`                 |                           | Use a preinstalled binary (self-hosted / air-gapped).                                                                                                                 |
 
 ## Outputs
 
@@ -197,6 +208,46 @@ jobs:
     leaves: ${{ steps.build.outputs.digest }}
 ```
 
+### Consume the outputs downstream
+
+Give the step an `id`, then read `steps.<id>.outputs.<name>` in a later step of
+the same job:
+
+```yaml
+- id: anchor
+  uses: cardanowall/poe-attest@v1
+  with:
+    gateway-url: https://cardanowall.com/api/v1
+    api-key: ${{ secrets.CARDANOWALL_API_KEY }}
+    paths: dist/**/*.tar.gz
+- run: echo "Anchored in ${{ steps.anchor.outputs.tx }} — ${{ steps.anchor.outputs.verify-url }}"
+```
+
+To use them in a **separate** job, surface them as job outputs and `needs:` the
+job:
+
+```yaml
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    outputs:
+      tx: ${{ steps.anchor.outputs.tx }}
+      verify-url: ${{ steps.anchor.outputs.verify-url }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: anchor
+        uses: cardanowall/poe-attest@v1
+        with:
+          gateway-url: https://cardanowall.com/api/v1
+          api-key: ${{ secrets.CARDANOWALL_API_KEY }}
+          paths: dist/**/*.tar.gz
+  announce:
+    needs: attest
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Anchored in ${{ needs.attest.outputs.tx }}"
+```
+
 ### Signed stream with a dedicated CI identity
 
 ```yaml
@@ -243,7 +294,8 @@ before every run, including tool-cache hits on long-lived self-hosted runners.
 
 - **Default:** nothing to do. The pinned version is fully digest-verified, and a
   cross-run tool-cache hit is re-verified against the embedded binary digest.
-- **`cli-version`:** use a different release. A non-default version is verified
+- **`cli-version`:** use a different release — for example to trial a new CLI
+  build in one workflow before adopting it. A non-default version is verified
   against its release `SHA256SUMS` and re-downloaded on every run rather than
   trusted from a cross-run cache (its manifest pins archives, not the extracted
   binary, so there is no independent binary digest to re-verify a cache hit

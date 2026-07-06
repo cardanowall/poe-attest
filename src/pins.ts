@@ -6,7 +6,7 @@
 
 import type { Target } from './platform';
 
-export const DEFAULT_CLI_VERSION = '0.9.1';
+export const DEFAULT_CLI_VERSION = '0.11.0';
 
 export interface CliPin {
   /** SHA-256 of the release archive (`.tar.gz` / `.zip`). */
@@ -17,23 +17,23 @@ export interface CliPin {
 
 export const CLI_PINS: Record<Target, CliPin> = {
   'x86_64-unknown-linux-musl': {
-    archiveSha256: 'f82d45686b4c2b37afbb1fab7b5fc9ca925c9e88e1e47e3e2544b1d9f0ce02f7',
-    binarySha256: '83b13738b4f02439bf7f9479989484286f5344dff3d63b4b5990576073f64193',
+    archiveSha256: 'f75e3b2dd9cb64f98d0b38c5618a99cbfed7f1effffbe3359383564e3d30f8a8',
+    binarySha256: 'fd6c9b54e8e6d6f8cffce3cecffbc3ae7f2a12dfcb353d3fc9e77f7a30b87ba0',
   },
   'aarch64-unknown-linux-musl': {
-    archiveSha256: 'de60c8afb0e2d1e0fdd7bc21b0f998344ed2166303929a0cd137a550e3e71b04',
-    binarySha256: 'b3bcbe37ef22bedd8d8b6178de1a16ec2c0fb91dc486bd27a4491c9e41ed9d20',
+    archiveSha256: '0fc0f67121c8b0b7d7b31909ed2cd6a711f8e0f98a3fc0f22e8ebfdb62ac4e77',
+    binarySha256: '570f914b7b37c05166d2ef69bcaddb5a8c2ea2016bc66045da613ce8607ef02e',
   },
   'x86_64-apple-darwin': {
-    archiveSha256: '7eb0d75f41a0cd61914432cc7aa5eddcf58ed9fd9313cdd554ed59146101e9c9',
-    binarySha256: '62d13f5c2e31691790d908a4cbf720cd9c08c3d62deecaed66ff9edbafecc48a',
+    archiveSha256: '4126420e0ca555f9b22ad77e0039c61079d5ea5344f3a6789146fa34ce1afba4',
+    binarySha256: 'e2471956dff7ce6b4634f11907e78851a56cd05ec4112a41881e5a43419255ad',
   },
   'aarch64-apple-darwin': {
-    archiveSha256: 'a6ec07ef9f6a796f04b0e673cfa036fd1d4c29ed6b245d6d62778c56978339ac',
-    binarySha256: '80e0d74cd4299ff114dfdf18c557aa59d32907629da5c879296923623892d78b',
+    archiveSha256: 'fe8baf582926dc4fe65ac863a61c90e60df2103c97482a74d4614ed3554c3d25',
+    binarySha256: '46836a4cbf7e9c07fa00365fb47a2474426e2fe34a2838874ff84ff7969c2af4',
   },
   'x86_64-pc-windows-msvc': {
-    archiveSha256: '93c83c30492ba6c4923fb0bfbdffdb58c629b56bb5c7297733dd2125b123ea2f',
-    binarySha256: '641fa1f5d9c5405553502878a32ba8a2dd507d94d164aae3042bceb12033e578',
+    archiveSha256: '1280fe245caf5722fdba74477fb143ba204152791666d3f6ebfb3c1734c370cb',
+    binarySha256: 'ff884db019446b0a3ab8c55b191c023824edc89f056bba9cbbfcaca934a4c4f0',
   },
 };
