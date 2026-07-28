@@ -15,10 +15,7 @@ import type { AttestSummary } from './outcome';
 import { errorMessage } from './util';
 
 export type ReleaseSource =
-  | { via: 'input'; tag: string }
-  | { via: 'payload' }
-  | { via: 'ref'; tag: string }
-  | null;
+  { via: 'input'; tag: string } | { via: 'payload' } | { via: 'ref'; tag: string } | null;
 
 const TAG_REF_PREFIX = 'refs/tags/';
 
@@ -52,8 +49,7 @@ export async function attachToRelease(config: Config, summary: AttestSummary): P
 
   const { context } = github;
   const payloadRelease = context.payload['release'] as
-    | { id: number; tag_name: string; draft?: boolean }
-    | undefined;
+    { id: number; tag_name: string; draft?: boolean } | undefined;
   const source = resolveReleaseSource(config.releaseTag, payloadRelease != null, context.ref);
   if (source === null) {
     core.warning(

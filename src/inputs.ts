@@ -18,8 +18,7 @@ export type UploadArtifact = 'auto' | 'true' | 'false';
 
 /** An explicit SHA-256 pin supplied for a non-default `cli-version`. */
 export type CliSha256Override =
-  | { kind: 'single'; sha256: string }
-  | { kind: 'perTarget'; byTarget: Map<Target, string> };
+  { kind: 'single'; sha256: string } | { kind: 'perTarget'; byTarget: Map<Target, string> };
 
 /**
  * The raw, unvalidated inputs exactly as read from the Actions runtime. Every
