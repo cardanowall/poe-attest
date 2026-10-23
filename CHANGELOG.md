@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/). Consume
 the action by major tag — `uses: cardanowall/poe-attest@v1` — to track the newest
 compatible release.
 
+## [1.1.1] - 2026-10-23
+
+### Security
+
+- Rebuild the bundled `dist/` against undici 6.29.1 (previously 6.28.0), the
+  HTTP client the `@actions/*` toolkit uses for its GitHub API, artifact, and
+  tool-cache requests. This picks up the fixes for a TLS certificate validation
+  bypass via dropped Agent `tls` options (GHSA-2m5v-pch6-74hx), denial of
+  service via excessive content-encodings (GHSA-xjj6-f33q-929c) and TLS 1.2
+  renegotiation (GHSA-qrxm-fqhp-jwvm), and the earlier 6.28.1 fixes. The
+  action's inputs, outputs, behaviour, and pinned CLI are unchanged.
+
 ## [1.1.0] - 2026-07-28
 
 ### Changed

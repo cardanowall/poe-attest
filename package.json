@@ -1,6 +1,6 @@
 {
   "name": "@cardanowall/poe-attest-action",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "GitHub Action that anchors file hashes, git commits, or precomputed digests on Cardano as a Label 309 Proof of Existence.",
   "license": "Apache-2.0",
@@ -42,6 +42,6 @@
     "@types/node": "^24.13.2",
     "esbuild": "^0.28.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.0"
   }
 }
